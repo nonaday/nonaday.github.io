@@ -1,10 +1,17 @@
 <script lang="ts">
+  import { env } from '$env/dynamic/public'
   import { profile } from '$lib/app/auth'
   import { errorMessage } from '$lib/app/error'
   import { t } from '$lib/app/i18n'
   import { uploadImage } from '$lib/app/util.svelte'
-  import { Button, toast } from 'mono-svelte'
-  import { DocumentPlus, Icon } from 'svelte-hero-icons/dist'
+  import imageCompression from 'browser-image-compression'
+  import { Button, Material, toast } from 'mono-svelte'
+  import {
+    DocumentPlus,
+    ExclamationTriangle,
+    Icon,
+    InformationCircle,
+  } from 'svelte-hero-icons/dist'
   import { expoOut } from 'svelte/easing'
   import { slide } from 'svelte/transition'
   import ProgressBar from '../info/ProgressBar.svelte'
@@ -24,9 +31,37 @@
   }: Props = $props()
   let progress = $state(1)
 
-  let previewURLs = $derived(
-    preview && image ? Array.from(image).map(URL.createObjectURL) : undefined,
+  const maxSizeMB = env.PUBLIC_MAX_IMAGE_SIZE_MB
+    ? parseFloat(env.PUBLIC_MAX_IMAGE_SIZE_MB)
+    : null
+  const maxSizeBytes = maxSizeMB != null ? maxSizeMB * 1024 * 1024 : null
+
+  let files = $derived(image ? Array.from(image) : [])
+
+  let willCompress = $derived(
+    !!maxSizeBytes &&
+      files.some((f) => f.size > maxSizeBytes! && f.type !== 'image/gif'),
   )
+
+  let hasOversizedGifs = $derived(
+    !!maxSizeBytes &&
+      files.some((f) => f.size > maxSizeBytes! && f.type === 'image/gif'),
+  )
+
+  let previewURLs = $derived(
+    preview && image ? files.map(URL.createObjectURL) : undefined,
+  )
+
+  async function compressIfNeeded(file: File): Promise<File> {
+    if (
+      maxSizeMB == null ||
+      file.size <= maxSizeMB * 1024 * 1024 ||
+      file.type === 'image/gif'
+    ) {
+      return file
+    }
+    return imageCompression(file, { maxSizeMB, useWebWorker: true })
+  }
 
   async function upload() {
     if (!profile.current?.jwt || image == null) return
@@ -36,10 +71,17 @@
     try {
       const uploaded = (
         await Promise.all(
-          Array.from(image).map((i) =>
-            uploadImage(i, profile.current.instance, profile.current.jwt!)
+          files.map((i) =>
+            compressIfNeeded(i)
+              .then((compressed) =>
+                uploadImage(
+                  compressed,
+                  profile.current.instance,
+                  profile.current.jwt!,
+                ),
+              )
               .then((uploaded) => {
-                progress += 1 / (image?.length ?? 0)
+                progress += 1 / (files.length ?? 0)
                 return uploaded
               })
               .catch((err) => {
@@ -116,6 +158,31 @@
       bind:files={image}
     />
   </label>
+  {#if willCompress}
+    <div transition:slide={{ duration: 300, easing: expoOut }}>
+      <Material
+        color="info"
+        rounding="2xl"
+        class="flex flex-row items-center gap-2 px-3 py-2.5 text-sm"
+      >
+        <Icon src={InformationCircle} size="20" micro class="shrink-0" />
+        Images exceeding {maxSizeMB} MB will be automatically compressed before uploading.
+      </Material>
+    </div>
+  {/if}
+  {#if hasOversizedGifs}
+    <div transition:slide={{ duration: 300, easing: expoOut }}>
+      <Material
+        color="warning"
+        rounding="2xl"
+        class="flex flex-row items-center gap-2 px-3 py-2.5 text-sm"
+      >
+        <Icon src={ExclamationTriangle} size="20" micro class="shrink-0" />
+        GIF files cannot be compressed and may be rejected if they exceed
+        {maxSizeMB} MB.
+      </Material>
+    </div>
+  {/if}
   <Button
     loading={progress != 1}
     disabled={progress != 1 || image == null}

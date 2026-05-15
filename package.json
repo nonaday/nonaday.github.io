@@ -59,5 +59,8 @@
     "format:specific": "prettier --write",
     "lint": "eslint ."
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "browser-image-compression": "^2.0.2"
+  }
 }
