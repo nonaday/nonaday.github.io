@@ -351,7 +351,7 @@
       'avatar stats badges';
     gap: 0;
     grid-template-rows: auto auto auto;
-    grid-template-columns: 40px minmax(0, auto);
+    grid-template-columns: max-content minmax(0, auto);
   }
 
   .meta.minimal {
@@ -365,7 +365,7 @@
         'avatar stats'
         'badges badges';
       gap: 0;
-      grid-template-columns: 32px minmax(0, auto);
+      grid-template-columns: max-content minmax(0, auto);
     }
     .meta.minimal {
       grid-template-columns: 0fr;

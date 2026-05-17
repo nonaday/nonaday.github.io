@@ -15,7 +15,7 @@
   let { community, subscribed, user, view = 'cozy' }: Props = $props()
 
   let size = $derived(view === 'compact' ? 24 : 32)
-  let overlaySize = $derived(view === 'compact' ? 14 : 18)
+  let overlaySize = $derived(view === 'compact' ? 16 : 20)
 </script>
 
 {#snippet communityPopover()}
@@ -70,22 +70,22 @@
       {/if}
     {/snippet}
   </Popover>
-
 {:else if settings.posts.postIcon === 'combined'}
   <Popover>
     {#snippet target(attachment)}
       <button
         {@attach attachment}
-        class="row-span-2 shrink-0 mr-2 self-center relative group/btn cursor-pointer bg-slate-200 dark:bg-zinc-800 rounded-lg"
-        style="width: {size}px; height: {size}px;"
+        class="row-span-2 shrink-0 self-center relative group/btn cursor-pointer bg-slate-200 dark:bg-zinc-800 rounded-lg"
+        style="width: {size}px; height: {size}px; margin-right: {8 +
+          overlaySize * 0.1}px;"
       >
         {@render communityAvatar()}
         <Avatar
           url={user?.avatar}
           width={overlaySize}
           alt={user?.name}
-          circle={true}
-          class="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 ring-2 ring-white dark:ring-zinc-900"
+          circle={false}
+          class="absolute bottom-0 right-0 translate-x-[10%] translate-y-[10%] ring-2 ring-white dark:ring-zinc-900"
         />
       </button>
     {/snippet}
@@ -95,7 +95,6 @@
       {/if}
     {/snippet}
   </Popover>
-
 {:else}
   <Popover>
     {#snippet target(attachment)}
@@ -110,7 +109,7 @@
           url={user?.avatar}
           width={size}
           alt={user?.name}
-          circle={true}
+          circle={false}
           class="group-hover/btn:scale-90 group-active/btn:scale-[.85] transition-transform"
         />
       </button>
